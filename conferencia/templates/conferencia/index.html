@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload e Conferência de NFe</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f4f9; padding: 20px; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1, h2 { text-align: center; color: #444; }
+        .form-group { margin-bottom: 20px; }
+        input[type="file"] { display: block; margin-top: 10px; }
+        .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: #fff; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; width: 100%; font-size: 16px; }
+        .btn:hover { background: #0056b3; }
+        
+        /* Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
+        .modal { background: #fff; padding: 30px; border-radius: 8px; width: 95%; max-width: 800px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
+        .modal.active { display: block; }
+        .modal-overlay.active { display: flex; }
+        
+        .section-title { font-size: 1.1em; color: #0056b3; margin-top: 20px; border-bottom: 2px solid #eee; padding-bottom: 5px; }
+        .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .data-row { margin-bottom: 5px; }
+        .data-row strong { color: #555; }
+        
+        table.produtos-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
+        table.produtos-table th, table.produtos-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        table.produtos-table th { background-color: #f8f9fa; }
+
+        input[type="datetime-local"], textarea { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        textarea { resize: vertical; min-height: 80px; }
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-cancel { background: #ccc; color: #333; }
+        .btn-cancel:hover { background: #bbb; }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #218838; }
+        #message { margin-top: 15px; text-align: center; font-weight: bold; }
+        .error { color: #dc3545; }
+        .success { color: #28a745; }
+        .info-cpl { background: #f8f9fa; padding: 10px; border-left: 4px solid #17a2b8; font-style: italic; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Conferência de NFe</h1>
+    <p style="text-align: center; margin-bottom: 30px;">Selecione o arquivo XML da Nota Fiscal para iniciar a conferência.</p>
+    
+    <div class="form-group">
+        <label for="xml_file"><strong>Arquivo XML (.xml):</strong></label>
+        <input type="file" id="xml_file" accept=".xml">
+    </div>
+    <button class="btn" id="btn-upload">Enviar e Conferir</button>
+    <div id="message"></div>
+</div>
+
+<!-- Modal Overlay -->
+<div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+        <h2>Detalhes da NFe</h2>
+        
+        <h3 class="section-title">1. Dados de Identificação e Validação</h3>
+        <div class="data-grid">
+            <div class="data-row"><strong>Chave de Acesso:</strong> <span id="lbl_chave"></span></div>
+            <div class="data-row"><strong>Série e Número:</strong> <span id="lbl_serie"></span> / <span id="lbl_numero"></span></div>
+            <div class="data-row"><strong>Remetente (Fornecedor):</strong> <span id="lbl_fornecedor"></span></div>
+            <div class="data-row"><strong>Destinatário:</strong> <span id="lbl_destinatario"></span></div>
+        </div>
+
+        <h3 class="section-title">2. Dados de Quantidade e Volume</h3>
+        <div class="data-grid">
+            <div class="data-row"><strong>Qtde de Volumes:</strong> <span id="lbl_qVol"></span></div>
+            <div class="data-row"><strong>Espécie de Volumes:</strong> <span id="lbl_esp"></span></div>
+            <div class="data-row"><strong>Peso Bruto:</strong> <span id="lbl_pesoB"></span></div>
+            <div class="data-row"><strong>Peso Líquido:</strong> <span id="lbl_pesoL"></span></div>
+        </div>
+
+        <h3 class="section-title">3. Dados do Produto</h3>
+        <div style="overflow-x: auto;">
+            <table class="produtos-table">
+                <thead>
+                    <tr>
+                        <th>Código (SKU/EAN)</th>
+                        <th>Descrição do Produto</th>
+                        <th>NCM</th>
+                        <th>Unidade</th>
+                        <th>Pedido (OC)</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody_produtos">
+                    <!-- Produtos inseridos via JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <h3 class="section-title">4. Informações Complementares</h3>
+        <div class="info-cpl" id="lbl_infCpl">Nenhuma informação complementar.</div>
+        
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ddd;">
+        
+        <h3>Dados da Conferência</h3>
+        <div class="form-group">
+            <label for="data_conferencia"><strong>Data e Hora da Conferência:</strong></label>
+            <input type="datetime-local" id="data_conferencia" required>
+        </div>
+        <div class="form-group">
+            <label for="observacoes"><strong>Observações (Opcional):</strong></label>
+            <textarea id="observacoes" placeholder="A nota física veio diferente? Falta algum item? Anote aqui..."></textarea>
+        </div>
+        
+        <div id="modal-message"></div>
+
+        <div class="btn-group">
+            <button class="btn btn-cancel" id="btn-cancelar">Cancelar</button>
+            <button class="btn btn-success" id="btn-salvar">Confirmar e Salvar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const csrfToken = "{{ csrf_token }}";
+
+    const btnUpload = document.getElementById('btn-upload');
+    const xmlInput = document.getElementById('xml_file');
+    const msgDiv = document.getElementById('message');
+    
+    const modalOverlay = document.getElementById('modal-overlay');
+    const btnCancelar = document.getElementById('btn-cancelar');
+    const btnSalvar = document.getElementById('btn-salvar');
+    const modalMsg = document.getElementById('modal-message');
+
+    let nfeData = {};
+
+    function showMessage(element, msg, type) {
+        element.textContent = msg;
+        element.className = type;
+    }
+
+    btnUpload.addEventListener('click', async () => {
+        const file = xmlInput.files[0];
+        if (!file) {
+            showMessage(msgDiv, 'Selecione um arquivo XML.', 'error');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('xml_file', file);
+
+        msgDiv.textContent = 'Processando...';
+        msgDiv.className = '';
+
+        try {
+            const response = await fetch('/upload/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.sucesso) {
+                nfeData = data.dados;
+                preencherModal(nfeData);
+                modalOverlay.classList.add('active');
+                msgDiv.textContent = '';
+                const now = new Date();
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                document.getElementById('data_conferencia').value = now.toISOString().slice(0,16);
+            } else {
+                showMessage(msgDiv, data.erro || 'Erro ao processar arquivo.', 'error');
+            }
+        } catch (error) {
+            showMessage(msgDiv, 'Erro de comunicação com o servidor.', 'error');
+        }
+    });
+
+    function preencherModal(dados) {
+        // Identificação
+        document.getElementById('lbl_chave').textContent = dados.chave_acesso;
+        document.getElementById('lbl_numero').textContent = dados.numero_nota;
+        document.getElementById('lbl_serie').textContent = dados.serie;
+        document.getElementById('lbl_fornecedor').textContent = dados.fornecedor;
+        document.getElementById('lbl_destinatario').textContent = dados.destinatario;
+        
+        // Volumes
+        document.getElementById('lbl_qVol').textContent = dados.quantidade_volumes || '-';
+        document.getElementById('lbl_esp').textContent = dados.especie_volumes || '-';
+        document.getElementById('lbl_pesoB').textContent = dados.peso_bruto ? dados.peso_bruto + ' kg' : '-';
+        document.getElementById('lbl_pesoL').textContent = dados.peso_liquido ? dados.peso_liquido + ' kg' : '-';
+        
+        // Info Complementar
+        document.getElementById('lbl_infCpl').textContent = dados.info_complementar || 'Nenhuma informação complementar.';
+
+        // Produtos
+        const tbody = document.getElementById('tbody_produtos');
+        tbody.innerHTML = '';
+        if (dados.produtos && dados.produtos.length > 0) {
+            dados.produtos.forEach(p => {
+                const tr = document.createElement('tr');
+                const codigoStr = p.ean ? `${p.codigo} / ${p.ean}` : p.codigo;
+                tr.innerHTML = `
+                    <td>${codigoStr}</td>
+                    <td>${p.descricao}</td>
+                    <td>${p.ncm}</td>
+                    <td>${p.unidade}</td>
+                    <td>${p.pedido || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum produto encontrado.</td></tr>';
+        }
+
+        document.getElementById('observacoes').value = '';
+        modalMsg.textContent = '';
+    }
+
+    btnCancelar.addEventListener('click', () => {
+        modalOverlay.classList.remove('active');
+        xmlInput.value = ''; 
+    });
+
+    btnSalvar.addEventListener('click', async () => {
+        const dataConf = document.getElementById('data_conferencia').value;
+        const obs = document.getElementById('observacoes').value;
+
+        if (!dataConf) {
+            showMessage(modalMsg, 'A Data e Hora da Conferência é obrigatória.', 'error');
+            return;
+        }
+
+        const payload = new URLSearchParams({
+            chave_acesso: nfeData.chave_acesso,
+            numero_nota: nfeData.numero_nota,
+            fornecedor: nfeData.fornecedor,
+            cnpj_fornecedor: nfeData.cnpj_fornecedor,
+            valor_total: nfeData.valor_total,
+            data_emissao: nfeData.data_emissao || '',
+            data_conferencia: dataConf,
+            observacoes: obs,
+            dados_completos: JSON.stringify(nfeData)
+        });
+
+        btnSalvar.disabled = true;
+        btnSalvar.textContent = 'Salvando...';
+
+        try {
+            const response = await fetch('/salvar/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: payload
+            });
+
+            const result = await response.json();
+
+            if (result.sucesso) {
+                modalOverlay.classList.remove('active');
+                xmlInput.value = ''; 
+                showMessage(msgDiv, 'NFe conferida e salva com sucesso!', 'success');
+            } else {
+                showMessage(modalMsg, result.erro || 'Erro ao salvar conferência.', 'error');
+            }
+        } catch (error) {
+            showMessage(modalMsg, 'Erro de comunicação com o servidor.', 'error');
+        } finally {
+            btnSalvar.disabled = false;
+            btnSalvar.textContent = 'Confirmar e Salvar';
+        }
+    });
+</script>
+</body>
+</html>
