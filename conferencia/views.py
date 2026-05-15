@@ -1,10 +1,12 @@
-from django.shortcuts import render
-from django.http import JsonResponse
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse, HttpResponse
+from django.contrib import messages
+from django.template.loader import get_template
 from django.views.decorators.http import require_POST
 from .utils import parse_nfe_xml
 from .models import ConferenciaNFe
 from datetime import datetime
-
+from xhtml2pdf import pisa
 def index(request):
     """Renders the main page with upload form and modal."""
     return render(request, 'conferencia/index.html')
@@ -84,3 +86,32 @@ def salvar_conferencia(request):
 
     except Exception as e:
         return JsonResponse({'sucesso': False, 'erro': str(e)}, status=500)
+
+def lista_conferencias(request):
+    conferencias = ConferenciaNFe.objects.all()
+    return render(request, 'conferencia/lista.html', {'conferencias': conferencias})
+
+def deletar_conferencia(request, id):
+    conferencia = get_object_or_404(ConferenciaNFe, id=id)
+    if request.method == 'POST':
+        conferencia.delete()
+        messages.success(request, 'Conferência deletada com sucesso.')
+        return redirect('lista_conferencias')
+    return redirect('lista_conferencias')
+
+def gerar_pdf_conferencia(request, id):
+    conferencia = get_object_or_404(ConferenciaNFe, id=id)
+    template_path = 'conferencia/pdf_report.html'
+    context = {'conferencia': conferencia, 'produtos': conferencia.dados_completos.get('produtos', []) if conferencia.dados_completos else []}
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="conferencia_{conferencia.numero_nota}.pdf"'
+    
+    template = get_template(template_path)
+    html = template.render(context)
+    
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    
+    if pisa_status.err:
+        return HttpResponse('Tivemos erros ao gerar o PDF', status=500)
+    return response
