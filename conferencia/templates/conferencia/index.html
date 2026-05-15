@@ -39,6 +39,35 @@
         .error { color: #dc3545; }
         .success { color: #28a745; }
         .info-cpl { background: #f8f9fa; padding: 10px; border-left: 4px solid #17a2b8; font-style: italic; font-size: 0.9em; }
+
+        li {
+            background: var(--card-bg);
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        ul{
+            margin: 0;
+            padding: 0;
+            display: flex;
+            gap: 20px;
+            flex-direction: column;
+        }
+
+        .item{
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        li:hover { transform: translateX(5px); }
     </style>
 </head>
 <body>
@@ -53,6 +82,30 @@
     </div>
     <button class="btn" id="btn-upload">Enviar e Conferir</button>
     <div id="message"></div>
+
+    <ul>
+        {% for xml in xmls %}
+        <div class="item">
+            <details>
+                <summary>id: {{ xml.id }} - {{ xml }}</summary>
+                <ul>
+                    <li><strong>Chave de Acesso:</strong> {{ xml.chave_acesso }}</li>
+                    <li><strong>Número da Nota:</strong> {{ xml.numero_nota }}</li>
+                    <li><strong>Fornecedor:</strong> {{ xml.fornecedor }}</li>
+                    <li><strong>CNPJ Fornecedor:</strong> {{ xml.cnpj_fornecedor }}</li>
+                    <li><strong>Valor Total:</strong> {{ xml.valor_total }}</li>
+                    <li><strong>Data de Emissão:</strong> {{ xml.data_emissao }}</li>
+                    <li><strong>Data de Conferência:</strong> {{ xml.data_conferencia }}</li>
+                    <li><strong>Observações:</strong>{% if xml.observacoes != "" %} {{ xml.observacoes }} {% else %} Nenhum observação {% endif %}</li>
+                </ul>
+            </details>
+
+            <button>Deletar</button>
+        </div>
+        
+
+        {% endfor %}
+    </ul>
 </div>
 
 <!-- Modal Overlay -->

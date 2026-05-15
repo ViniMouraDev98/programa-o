@@ -1,13 +1,13 @@
 from django.shortcuts import render
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from .utils import parse_nfe_xml
 from .models import ConferenciaNFe
 from datetime import datetime
 
 def index(request):
-    """Renders the main page with upload form and modal."""
-    return render(request, 'conferencia/index.html')
+    xmls = ConferenciaNFe.objects.all()
+    return render(request, 'conferencia/index.html', {'xmls': xmls})
 
 @require_POST
 def upload_xml(request):
@@ -84,3 +84,5 @@ def salvar_conferencia(request):
 
     except Exception as e:
         return JsonResponse({'sucesso': False, 'erro': str(e)}, status=500)
+    
+# def deletar_nfe(request, nfe):

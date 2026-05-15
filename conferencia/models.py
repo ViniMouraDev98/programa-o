@@ -1,4 +1,5 @@
 from django.db import models
+import json
 
 class ConferenciaNFe(models.Model):
     # XML Data
@@ -16,7 +17,7 @@ class ConferenciaNFe(models.Model):
     # JSON with full NFe extracted data
     dados_completos = models.JSONField(verbose_name="Dados Completos da NFe", null=True, blank=True)
     
-    data_upload = models.DateTimeField(auto_now_add=True, verbose_name="Data do Upload")
+    data_upload = (models.DateTimeField(auto_now_add=True, verbose_name="Data do Upload"))
 
     class Meta:
         verbose_name = "Conferência de NFe"
