@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Conferência NFe</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        body { font-family: Helvetica, sans-serif; font-size: 12px; color: #333; }
+        h1 { text-align: center; color: #444; font-size: 18px; border-bottom: 2px solid #ccc; padding-bottom: 5px; }
+        h2 { font-size: 14px; color: #0056b3; margin-top: 15px; border-bottom: 1px solid #eee; padding-bottom: 3px; }
+        
+        .row { margin-bottom: 10px; }
+        .label { font-weight: bold; color: #555; }
+        .value { margin-left: 5px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+        th, td { border: 1px solid #ddd; padding: 5px; text-align: left; }
+        th { background-color: #f8f9fa; }
+        
+        .obs-box { border: 1px solid #ccc; padding: 10px; margin-top: 10px; min-height: 50px; background-color: #fcfcfc; }
+    </style>
+</head>
+<body>
+
+    <h1>Relatório de Conferência - NFe {{ conferencia.numero_nota }}</h1>
+
+    <h2>1. Dados Gerais</h2>
+    <div class="row"><span class="label">Chave de Acesso:</span> <span class="value">{{ conferencia.chave_acesso }}</span></div>
+    <div class="row"><span class="label">Fornecedor (Emitente):</span> <span class="value">{{ conferencia.fornecedor }}</span></div>
+    <div class="row"><span class="label">CNPJ Fornecedor:</span> <span class="value">{{ conferencia.cnpj_fornecedor }}</span></div>
+    <div class="row"><span class="label">Valor Total:</span> <span class="value">R$ {{ conferencia.valor_total }}</span></div>
+    <div class="row"><span class="label">Data de Emissão:</span> <span class="value">{{ conferencia.data_emissao|date:"d/m/Y"|default:"-" }}</span></div>
+    
+    <h2>2. Dados da Conferência</h2>
+    <div class="row"><span class="label">Data/Hora da Conferência:</span> <span class="value">{{ conferencia.data_conferencia|date:"d/m/Y H:i" }}</span></div>
+    <div class="row"><span class="label">Data de Upload no Sistema:</span> <span class="value">{{ conferencia.data_upload|date:"d/m/Y H:i" }}</span></div>
+
+    <h2>3. Observações do Conferente</h2>
+    <div class="obs-box">
+        {% if conferencia.observacoes %}
+            {{ conferencia.observacoes|linebreaksbr }}
+        {% else %}
+            <em>Nenhuma observação registrada.</em>
+        {% endif %}
+    </div>
+
+    <h2>4. Produtos da Nota</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Código / EAN</th>
+                <th>Descrição do Produto</th>
+                <th>NCM</th>
+                <th>Unidade</th>
+                <th>Qtd</th>
+                <th>Valor Unit.</th>
+                <th>Pedido (OC)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for prod in produtos %}
+            <tr>
+                <td>{{ prod.codigo }}{% if prod.ean %} / {{ prod.ean }}{% endif %}</td>
+                <td>{{ prod.descricao }}</td>
+                <td>{{ prod.ncm }}</td>
+                <td>{{ prod.unidade }}</td>
+                <td>{{ prod.quantidade }}</td>
+                <td>R$ {{ prod.valor_unitario }}</td>
+                <td>{{ prod.pedido|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" style="text-align:center;">Nenhum produto encontrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>
